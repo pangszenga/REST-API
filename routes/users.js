@@ -7,97 +7,55 @@ const auth = require("basic-auth");
 const bcrypt = require("bcryptjs");
 const { check, validationResult } = require("express-validator");
 
-// users array
-const users = [];
-
+const users = User.sequelize();
 // custom middleware for auth user -  calling this will protect the route
-// const authUser = (req, res, next) => {
-//   // setting up msg
-//   let msg = null;
-//   // grab user cred from req.header
-//   const cred = auth(req);
-
-//   // if user cred available pass through if statement
-//   if (cred) {
-//     // attempt to retrieve by user key
-//     const user = users.find(u => u.username === cred.name);
-
-//     // if user retrieved
-//     if (user) {
-//       const authenticated = bcrypt.compareSync(cred.pass, user.password);
-
-//       // and if passwords match
-//       if (authenticated) {
-//         console.log(`Authentication successful for username: ${user.username}`);
-//         // store retrieved user obj on req obj
-//         req.currentUser = user;
-
-//         // err msg for every level
-//       } else {
-//         msg = `Authentication failure for username: ${user.username}`;
-//       }
-//     } else {
-//       msg = `User not found for username: ${cred.name}`;
-//     }
-//   } else {
-//     msg = "Authenticated header not found";
-//   }
-
-//   // if auth completely fails
-//   if (msg) {
-//     console.warn(msg);
-
-//     // Return a response with a 401 Unauthorized HTTP status code.
-//     res.status(401).json({ msg: "Access Denied" });
-//   } else {
-//     // if auth successful, call next
-//     next();
-//   }
-// }; // end of function
-
-// User authentication
 const authUser = (req, res, next) => {
-  let message = null;
+  // setting up msg
+  let msg = null;
 
-  // Get the user's credentials from the Authorization header.
-  const credentials = auth(req);
-  if (credentials) {
-    // look and match for `emailAddress` to`name` property
-    User.findOne({
-      where: {
-        emailAddress: credentials.name
-      }
-    }).then(user => {
-      if (user) {
-        const authenticated = bcryptjs.compareSync(
-          credentials.pass,
-          user.password
-        );
-        if (authenticated) {
-          console.log(
-            `Authentication successful for email Address: ${user.emailAddress}`
-          );
+  // grab user cred from req.header
+  const cred = auth(req);
 
-          // Store the user on the Request object.
-          req.currentUser = user;
-          next();
-        } else {
-          const err = new Error(
-            `Authentication failure for email Address: ${user.emailAddress}`
-          );
-          err.status = 401;
-          next(err);
-        }
-      } else {
-        const err = new Error(
-          `User not found for email Address: ${credentials.name}`
-        );
-        err.status = 401;
-        next(err);
-      }
+  // if user cred available pass through if statement
+  if (cred) {
+    // attempt to retrieve by user key
+    const user = User.find(function(u) {
+      console.log(u.emailAddress);
+      return u.emailAddress === cred.name;
     });
+
+    // if user retrieved
+    if (user) {
+      const authenticated = bcrypt.compareSync(cred.pass, user.password);
+
+      // and if passwords match
+      if (authenticated) {
+        console.log(`Authentication successful for username: ${user.username}`);
+        // store retrieved user obj on req obj
+        req.currentUser = user;
+
+        // err msg for every level
+      } else {
+        msg = `Authentication failure for username: ${user.username}`;
+      } // if authenticated
+    } else {
+      msg = `User not found for username: ${cred.name}`;
+    } // if user is retrieved
+  } else {
+    msg = "Authenticated header not found";
+  } // if was able to grab cred from req
+
+  // if auth completely fails
+  if (msg) {
+    console.warn(msg);
+
+    // Return a response with a 401 Unauthorized HTTP status code.
+    res.status(401).json({ msg: "Access Denied" });
+  } else {
+    // if auth successful, call next
+    next();
   }
-};
+}; // end of function
 
 // GET /api/users 200
 // returns the currently authenticated user
