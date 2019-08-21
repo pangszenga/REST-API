@@ -9,14 +9,27 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true
     },
-    firstName: DataTypes.STRING,
-    lastName: DataTypes.STRING,
-    emailAddress: DataTypes.STRING,
-    password: DataTypes.STRING
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    estimatedTime: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    materialsNeeded: {
+      type: DataTypes.STRING,
+      allowNull: true
+    }
   });
 
   //Has Many associations
   // Course will belong to User, User will not belong to course
+  //This also grabs the userID
   Course.assoicate = function(models) {
     Course.belongsTo(models.Course, {
       as: "course",
@@ -26,6 +39,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     });
   };
+  return Course;
 };
 
 // id (Integer, primary key, auto-generated)

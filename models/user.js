@@ -4,14 +4,26 @@ const Op = require("Sequelize").Op;
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define("User", {
     id: {
-      type: Datatypes.INTEGER,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true
     },
-    firstName: DataTypes.STRING,
-    lastName: DataTypes.STRING,
-    emailAddress: DataTypes.STRING,
-    password: DataTypes.STRING
+    firstName: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    emailAddress: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
   });
 
   //Has Many associations
@@ -25,6 +37,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     });
   };
+  return User;
 };
 
 // id (Integer, primary key, auto-generated)
