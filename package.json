@@ -11,23 +11,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^1.19.1"
+    "nodemon": "^1.18.3"
   },
   "dependencies": {
-    "basic-auth": "^2.0.1",
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.19.0",
     "cross-env": "^5.2.0",
-    "express": "^4.17.1",
-    "express-validator": "^6.1.1",
-    "fs": "0.0.1-security",
-    "json": "^9.0.6",
-    "morgan": "^1.9.1",
-    "mysql2": "^1.6.5",
-    "path": "^0.12.7",
+    "express": "^4.16.3",
+    "morgan": "^1.9.0",
     "promise.prototype.finally": "^3.1.0",
-    "sequelize": "^5.15.2",
-    "sequelize-cli": "^5.5.0",
-    "sqlite3": "^4.1.0"
+    "sqlite3": "^4.0.2"
   }
 }
