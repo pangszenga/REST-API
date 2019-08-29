@@ -1,9 +1,9 @@
 "use strict";
 
-//import dependencies
+/*  */
 const express = require("express");
 const router = express.Router();
-const morgan = require("morgan");
+// const morgan = require("morgan");
 const { check, validationResult } = require("express-validator");
 const bcryptjs = require("bcryptjs");
 const auth = require("basic-auth");
@@ -12,38 +12,41 @@ const Course = require("./models").Course;
 const bodyParser = require("body-parser");
 const Sequelize = require("sequelize");
 
-// parse application/x-www-form-urlencoded
+/* SETUP */
+// format
 router.use(bodyParser.urlencoded({ extended: false }));
-
-// parse application/json
 router.use(bodyParser.json());
-// User authentication
-const authenticateUser = (req, res, next) => {
-  let message = null;
 
-  // Get the user's credentials from the Authorization header.
+/* USER AUTHENTICATION */
+const authUser = (req, res, next) => {
+  //grab user credentials form authorisation header
   const credentials = auth(req);
+
+  //conditionals to see if user email/password/email password combo matches those in db
   if (credentials) {
-    // Look for a user whose `emailAddress` matches the credentials `name` property.
+    //match emailAddress to credentials via User model
     User.findOne({
       where: {
         emailAddress: credentials.name
       }
     }).then(user => {
       if (user) {
+        //use bcrypt compare to compare password to credential password
         const authenticated = bcryptjs.compareSync(
           credentials.pass,
           user.password
         );
+
         if (authenticated) {
           console.log(
             `Authentication successful for email Address: ${user.emailAddress}`
           );
 
-          // Store the user on the Request object.
+          //also store user on req obj
           req.currentUser = user;
           next();
         } else {
+          //if emailAddress and password not matched
           const err = new Error(
             `Authentication failure for email Address: ${user.emailAddress}`
           );
@@ -51,6 +54,7 @@ const authenticateUser = (req, res, next) => {
           next(err);
         }
       } else {
+        //if emailAddress not found
         const err = new Err(
           `User not found for email Address: ${credentials.name}`
         );
@@ -61,9 +65,18 @@ const authenticateUser = (req, res, next) => {
   }
 };
 
-// GET /api/users 200 - Returns the currently authenticated user
+/* ROUTES */
 
-router.get("/users", authenticateUser, function(req, res, next) {
+//GET / - 200
+router.get("/", (req, res, next) => {
+  res.json({
+    message: "Welcome to the REST API project!"
+  });
+});
+
+//GET /users - 200
+
+router.get("/users", authUser, (req, res, next) => {
   const user = req.currentUser;
 
   //filter out password, createdAt and updatedAt
@@ -75,12 +88,12 @@ router.get("/users", authenticateUser, function(req, res, next) {
   });
 });
 
-//POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content.
+//POST /users 201
 
 router.post(
   "/users",
   [
-    // firstname should not be empty
+    //check that none of the below is empty
     check("firstName")
       .exists({ checkNull: true, checkFalsy: true })
       .withMessage('Please provide a value for "firstName"'),
@@ -95,64 +108,64 @@ router.post(
       .withMessage('Please provide a value for "password"')
   ],
   async (req, res, next) => {
-    // Finds the validation errors in this request and wraps them in an object with handy functions
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    //validation errors and shove in an obj
+    const err = validationResult(req);
+
+    if (!err.isEmpty()) {
+      return res.status(400).json({ err: err.array() });
     }
 
+    //async wait for req.body.emailAddress, then check if exist
     User.findOne({
       where: {
         emailAddress: req.body.emailAddress
       }
-    })
-      .then(user => {
-        //if user already exist then throw error
-        if (user) {
-          const err = new Error("This email already exist in the db");
-          next(err);
-        } else {
-          //if not create the user
-          const newUser = {
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            emailAddress: req.body.emailAddress,
-            password: req.body.password
-          };
+    }).then(user => {
+      if (user) {
+        //if emailAddress identifies user - throw error to prevent dupes
+        const err = new Error("This email already exists in the database");
+        next(err);
+      } else {
+        //if emailAddress does not identify user - create user
+        const newUser = {
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          emailAddress: req.body.emailAddress,
+          password: req.body.password
+        };
 
-          //hasg new user password
-          newUser.password = bcryptjs.hashSync(newUser.password);
-          User.create(newUser)
-            .then(() => {
-              // sets the Location header to "/", and returns no content
-              res
-                .location("/")
-                .status(201)
-                .end();
-            })
-            .catch(err => {
-              res.status(400).json(err.message);
-            });
-        }
-      })
-      .catch(err => {
-        res.status(400).json(err.message);
-      });
+        //hash new user password using bcryptjs
+        newUser.password = bcryptjs.hashSync(newUser.password);
+
+        //create this new user with hashed password in db
+        User.create(newUser)
+          .then(() => {
+            //set location header to "/" and return no content
+            res
+              .location("/")
+              .status(201)
+              .end();
+          })
+          .catch(err => {
+            res.status(400).json(err.message);
+          });
+      }
+    });
   }
 );
 
-//GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
+//GET /courses 200 - return list of courses including user
 
 router.get("/courses", (req, res, next) => {
-  Course.findAll({
-    raw: true
-  }).then(courses => {
+  Course.findAll().then(courses => {
     res.status(200).json(courses);
   });
 });
 
-//GET /api/courses/:id 200 - Returns a the course (including the user that owns the course) for the provided course ID
+//GET courses/:id 200 - returns course that belongs to use, if course id is provided
+
 router.get("/courses/:id", (req, res, next) => {
+  // find the course that matches the course id, filter out createdAt and updatedAt
   Course.findOne({
     where: {
       id: req.params.id
@@ -172,85 +185,52 @@ router.get("/courses/:id", (req, res, next) => {
       }
     ]
   }).then(course => {
+    //if this (singular) course is found
     if (course) {
+      //do this
       res.status(200).json({ course });
     } else {
       const err = new Error(
-        `Could not find a course that matches the id: ${req.params.id}`
+        "We could not find a course that matches the provide ID : ${req.params.id}"
       );
+      //set err status to bad request
       err.status = 400;
       next(err);
     }
   });
 });
 
-//POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
+//POST courses 201 - creates course, set the location header to the URI, returning no content
+
 router.post(
   "/courses",
   [
+    //check that none of the below is empty
+    check("userId")
+      .exists({ checkNull: true, checkFalsy: true })
+      .withMessage('Please provide a value for "userId"'),
     check("title")
       .exists({ checkNull: true, checkFalsy: true })
       .withMessage('Please provide a value for "title"'),
     check("description")
       .exists({ checkNull: true, checkFalsy: true })
       .withMessage('Please provide a value for "description"'),
-    check("userId")
-      .exists({ checkNull: true, checkFalsy: true })
-      .withMessage('Please provide a value for "userId"'),
-    check("estimeateTime").exists({ checkNull: false, checkFalsy: false }),
+    check("estimatedTime").exists({ checkNull: false, checkFalsy: false }),
     check("materialsNeeded").exists({ checkNull: false, checkFalsy: false })
   ],
   (req, res, next) => {
-    // Finds the validation errors in this request and wraps them in an object with handy functions
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    //validation errors and shove in an obj
+    const err = validationResult(req);
+
+    if (!err.isEmpty()) {
+      return res.status(400).json({ err: err.array() });
     }
+
+    //create course if no err found & return no content
     Course.create(req.body).then(course => {
-      res.location(`/api/courses/${course.id}`);
+      res.location(`/courses/${course.id}`);
       res.status(201).end();
     });
   }
 );
-
-// PUT /api/courses/:id 204 - Updates a course and returns no content
-router.put("/courses/:id", authenticateUser, (req, res, next) => {
-  const user = req.currentUser;
-  Course.findOne({
-    where: {
-      id: req.params.id
-    }
-  }).then(course => {
-    if (course) {
-      if (user.id === course.userId) {
-        course.update(req.body);
-        res.status(204).end();
-      } else {
-        res
-          .status(403)
-          .json("Oops! sorry, you don't have permission to update this course");
-      }
-    } else {
-    }
-  });
-});
-
-//DELETE /api/courses/:id 204 - Deletes a course and returns no content
-router.delete("/courses/:id", authenticateUser, (req, res, next) => {
-  const user = req.currentUser;
-  Course.findOne({
-    where: {
-      id: req.params.id
-    }
-  }).then(course => {
-    if (user.id === course.userId) {
-      course.destroy();
-      res.status(204).end();
-    } else {
-      res
-        .status(403)
-        .json("Oops! sorry, you don't have permission to Delete this course");
-    }
-  });
-});
 module.exports = router;

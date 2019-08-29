@@ -12,14 +12,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         unique: true,
         validate: {
-          notEmpty: true
+          // allowNull: false,
+          notEmpty: {
+            msg: "Title is required"
+          }
         }
       },
       description: {
         type: DataTypes.TEXT,
-        allowNull: false,
         validate: {
-          notEmpty: true
+          // allowNull: false,
+          notEmpty: {
+            msg: "Description is required"
+          }
         }
       },
       estimatedTime: {
@@ -36,9 +41,16 @@ module.exports = (sequelize, DataTypes) => {
   Course.associate = function(models) {
     // associations can be defined here
     Course.belongsTo(models.User, {
+      as: "user",
       foreignKey: {
         fieldName: "userId",
-        allowNull: false
+        allowNull: false,
+        validate: {
+          notNull: {
+            args: true,
+            msg: "You must enter a userId"
+          }
+        }
       }
     });
   };
