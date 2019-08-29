@@ -41,9 +41,8 @@ module.exports = (sequelize, DataTypes) => {
   Course.associate = function(models) {
     // associations can be defined here
     Course.belongsTo(models.User, {
-      as: "user",
       foreignKey: {
-        fieldName: "userId",
+        name: "userId",
         allowNull: false,
         validate: {
           notNull: {
