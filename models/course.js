@@ -10,11 +10,14 @@ module.exports = (sequelize, DataTypes) => {
       },
       title: {
         type: DataTypes.STRING,
-        unique: true,
+        unique: {
+          args: true,
+          msg: "This email already exist"
+        },
         validate: {
           // allowNull: false,
           notEmpty: {
-            msg: "Title is required"
+            msg: "The title is required"
           }
         }
       },
@@ -42,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
     // associations can be defined here
     Course.belongsTo(models.User, {
       foreignKey: {
-        name: "userId",
+        fieldName: "userId",
         allowNull: false,
         validate: {
           notNull: {
