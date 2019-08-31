@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         unique: {
           args: true,
-          msg: "This email already exist"
+          msg: "This title already exist"
         },
         validate: {
           // allowNull: false,
